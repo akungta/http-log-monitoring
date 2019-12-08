@@ -10,10 +10,11 @@ import java.time.LocalDateTime;
 @Builder
 public class HttpEvent {
     String ip;
-    String hostname;
-    Instant dateTime;
+    String userId;
+    Instant instant;
     String method;
     String section;
     String path;
     int statusCode;
+    int bytes;
 }
