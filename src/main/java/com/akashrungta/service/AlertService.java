@@ -1,11 +1,69 @@
 package com.akashrungta.service;
 
+import com.akashrungta.model.AlertRecoveredEvent;
+import com.akashrungta.model.AlertStartedEvent;
+import com.akashrungta.model.HttpEvent;
 import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-@RequiredArgsConstructor
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
+import java.util.Comparator;
+import java.util.IntSummaryStatistics;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+@Slf4j
 public class AlertService {
 
     private final EventBus eventBus;
+
+    private final ConcurrentSkipListMap<Instant, Integer> requestsCounts;
+
+    private AtomicBoolean isAlerting;
+
+    public AlertService(EventBus eventBus) {
+        this.eventBus = eventBus;
+        this.requestsCounts = new ConcurrentSkipListMap<>(Comparator.comparingLong(Instant::toEpochMilli));
+        this.isAlerting = new AtomicBoolean(false);
+    }
+
+    @Subscribe
+    public void subscribe(HttpEvent event){
+        requestsCounts.merge(event.getInstant(), 1, Integer::sum);
+    }
+
+    public void checkAlerts(int alertThresholdRPS, int alertDuration) {
+        Instant now = Instant.now();
+        Instant minusDuration = now.minusSeconds(alertDuration);
+        // fetch all the requests counts for the given duration
+        ConcurrentNavigableMap<Instant, Integer> subMap = requestsCounts.tailMap(minusDuration);
+        // sum of all the request within the given duration
+        IntSummaryStatistics summaryStatistics = subMap.values().stream().mapToInt(Integer::intValue).summaryStatistics();
+        // check if the average of the requests is greater than the alert threshold
+        if(summaryStatistics.getAverage() >= alertThresholdRPS){
+            log.debug("threshold of the alerts is reached " + summaryStatistics);
+            // set the flag to alerting, and check the previous state
+            boolean wasAlerting = isAlerting.getAndSet(true);
+            // if previous state was not alerting, start alerting now
+            if(!wasAlerting){
+                eventBus.post(new AlertStartedEvent(now, summaryStatistics.getSum()));
+            }
+        } else {
+            // set the flag to non-alerting, and check the previous state
+            boolean wasAlerting = isAlerting.getAndSet(false);
+            // if previous state was not alerting, send recovery alert
+            if(wasAlerting){
+                eventBus.post(new AlertRecoveredEvent(now));
+            }
+        }
+        // clear all the element older than 2 minutes
+        requestsCounts.headMap(minusDuration).clear();
+    }
 
 }

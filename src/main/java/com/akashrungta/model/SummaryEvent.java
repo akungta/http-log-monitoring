@@ -2,10 +2,7 @@ package com.akashrungta.model;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import lombok.Data;
-import lombok.Getter;
-import lombok.ToString;
-import lombok.Value;
+import lombok.*;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -16,23 +13,15 @@ import java.util.Set;
 
 @Getter
 @ToString
+@RequiredArgsConstructor
 public class SummaryEvent {
-    private String from;
-    private String to;
+    private final Instant from;
+    private final Instant to;
     private int totalRequests = 0;
     private Map<String, Integer> hitsPerSections = Maps.newHashMap();
     private Map<Integer, Integer> statusCodeCounts = Maps.newHashMap();
     private Set<String> unqiueUserIds = Sets.newHashSet();
     private int totalBytes = 0;
-
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
-            .withLocale(Locale.UK)
-            .withZone(ZoneId.systemDefault());
-
-    public SummaryEvent(Instant from, Instant to) {
-        this.from =  formatter.format(from);
-        this.to = formatter.format(to);
-    }
 
     public void incrementRequestCount(){
         totalRequests++;

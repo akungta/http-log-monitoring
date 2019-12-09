@@ -14,9 +14,9 @@ import java.util.concurrent.*;
 @Slf4j
 public class SummaryService {
 
-    private final ConcurrentLinkedQueue<HttpEvent> httpEventsQueue;
-
     private final EventBus eventBus;
+
+    private final ConcurrentLinkedQueue<HttpEvent> httpEventsQueue;
 
     public SummaryService(EventBus eventBus){
         this.eventBus = eventBus;
@@ -25,13 +25,14 @@ public class SummaryService {
 
     @Subscribe
     public void subscribe(HttpEvent event){
-        this.httpEventsQueue.add(event);
+        httpEventsQueue.add(event);
     }
 
     public void summarize(int summaryInterval){
         Instant now = Instant.now();
         Instant minusInterval = now.minusSeconds(summaryInterval);
         List<HttpEvent> httpEventsToBeSummarized = Lists.newArrayList();
+        // loop to collect all the events in the queue till the current
         while(httpEventsQueue.peek() != null && !httpEventsQueue.peek().getInstant().isAfter(now)){
             HttpEvent event = httpEventsQueue.poll();
             // ignore unprocessed/out-of-order http event before the interval

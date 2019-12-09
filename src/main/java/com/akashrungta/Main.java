@@ -29,11 +29,15 @@ public class Main implements Runnable {
 
     @CommandLine.Option(names = {"-t", "--alertThreshold"}, paramLabel = "NUM",
             description = "The threshold requests per seconds to trigger alerts. (Default: 10)")
-    private int alertThresholdPerSeconds = 10;
+    private int alertThresholdRPS = 10;
+
+    @CommandLine.Option(names = {"-d", "--alertDuration"}, paramLabel = "NUM",
+            description = "The duration window (seconds) to analyse the alerts. (Default: 120)")
+    private int alertDuration = 120;
 
     @CommandLine.Option(names = {"-i", "--summaryInterval"}, paramLabel = "NUM",
             description = "The periodic interval (seconds) to compute summary. (Default: 10)")
-    private int summaryInterval = 10;
+    private int summaryIntervalInSeconds = 10;
 
     @CommandLine.Option(names = {"-h", "--help"}, usageHelp = true,
             description = "Print usage help and exit.")
@@ -66,16 +70,20 @@ public class Main implements Runnable {
         eventBus.register(summaryService);
         eventBus.register(alertService);
 
+        // executor service to schedule summary and alerts
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
+
         // scheduler to run the summary service every given interval, starting at the given interval
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
-        scheduledExecutorService.scheduleAtFixedRate(new ScheduledRunnable(summaryService, summaryInterval), summaryInterval, summaryInterval, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(new SummaryRunner(summaryService),
+                summaryIntervalInSeconds, summaryIntervalInSeconds, TimeUnit.SECONDS);
 
-        // alert listener (some pub-sub thingy)
+        // scheduler to run the alter service every 1 second after the initial alert duration
+        scheduledExecutorService.scheduleWithFixedDelay(new AlertRunner(alertService),
+                alertDuration, 1, TimeUnit.SECONDS);
 
-        // setup log listener, this will post to the eventbus
-        LogTailerListener listener = new LogTailerListener(eventBus);
         // tail -f functionality to read the latest added entry to the log file, every 100ms
-        Tailer tailer = new Tailer(new File(file), listener, 100, true);
+        Tailer tailer = new Tailer(new File(file), new LogTailerListener(eventBus), 100, true);
+        // start the reading of the log file
         tailer.run();
 
         // shutdown hook to clean up the eventbus, gracefully shutdown the tailer and scheduler threads
@@ -91,15 +99,14 @@ public class Main implements Runnable {
     }
 
     @RequiredArgsConstructor
-    static class ScheduledRunnable implements Runnable {
+    private class SummaryRunner implements Runnable {
 
         private final SummaryService summaryService;
-        private final int summaryInterval;
 
         @Override
         public void run() {
             try {
-                summaryService.summarize(summaryInterval);
+                summaryService.summarize(summaryIntervalInSeconds);
             } catch (Exception e) {
                 log.error("exception while summarizing", e);
             }
@@ -107,7 +114,22 @@ public class Main implements Runnable {
     }
 
     @RequiredArgsConstructor
-    static class LogTailerListener extends TailerListenerAdapter {
+    private class AlertRunner implements Runnable {
+
+        private final AlertService alertService;
+
+        @Override
+        public void run() {
+            try {
+                alertService.checkAlerts(alertThresholdRPS, alertDuration);
+            } catch (Exception e) {
+                log.error("exception while calling alert trigger", e);
+            }
+        }
+    }
+
+    @RequiredArgsConstructor
+    private static class LogTailerListener extends TailerListenerAdapter {
 
         private final EventBus eventBus;
 
