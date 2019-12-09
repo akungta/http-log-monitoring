@@ -55,15 +55,18 @@ public class Main implements Runnable {
         // setup eventbus to publish alerts
         EventBus eventBus = new EventBus();
 
+        // service to create the summary of http access logs
         SummaryService summaryService = new SummaryService(eventBus);
+        // service to alert in case of of high-traffic and recovery
         AlertService alertService = new AlertService(eventBus);
+        // service to print the events in the console
         PrintConsoleService printConsoleService = new PrintConsoleService();
 
         eventBus.register(printConsoleService);
         eventBus.register(summaryService);
         eventBus.register(alertService);
 
-        // every 10s process
+        // scheduler to run the summary service every given interval, starting at the given interval
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
         scheduledExecutorService.scheduleAtFixedRate(new ScheduledRunnable(summaryService, summaryInterval), summaryInterval, summaryInterval, TimeUnit.SECONDS);
 
@@ -75,6 +78,7 @@ public class Main implements Runnable {
         Tailer tailer = new Tailer(new File(file), listener, 100, true);
         tailer.run();
 
+        // shutdown hook to clean up the eventbus, gracefully shutdown the tailer and scheduler threads
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Exiting");
             log.info("Exiting");
@@ -94,7 +98,11 @@ public class Main implements Runnable {
 
         @Override
         public void run() {
-            summaryService.summarize(summaryInterval);
+            try {
+                summaryService.summarize(summaryInterval);
+            } catch (Exception e) {
+                log.error("exception while summarizing", e);
+            }
         }
     }
 
@@ -105,9 +113,12 @@ public class Main implements Runnable {
 
         @Override
         public void handle(String logLine) {
-            log.debug("Received logline " + logLine);
-            Optional<HttpEvent> httpEvent = LogUtils.parseLogLine(logLine);
-            httpEvent.ifPresent(e -> eventBus.post(e));
+            try {
+                Optional<HttpEvent> httpEvent = LogUtils.parseLogLine(logLine);
+                httpEvent.ifPresent(e -> eventBus.post(e));
+            } catch (Exception e) {
+                log.error("exception in log listener", e);
+            }
         }
 
     }

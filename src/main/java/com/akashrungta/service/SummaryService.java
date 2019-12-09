@@ -39,7 +39,7 @@ public class SummaryService {
                 httpEventsToBeSummarized.add(event);
             }
         }
-        log.debug("Identified events size " + httpEventsToBeSummarized.size());
+        log.debug("http events to summarize size " + httpEventsToBeSummarized.size());
         if(!httpEventsToBeSummarized.isEmpty()) {
             SummaryEvent summaryEvent = new SummaryEvent(minusInterval, now);
             for (HttpEvent httpEvent : httpEventsToBeSummarized) {
@@ -49,7 +49,7 @@ public class SummaryService {
                 summaryEvent.addUserId(httpEvent.getUserId());
                 summaryEvent.addBytes(httpEvent.getBytes());
             }
-            log.debug("Created summary " + summaryEvent);
+            log.debug("created summary " + summaryEvent);
             eventBus.post(summaryEvent);
         }
     }

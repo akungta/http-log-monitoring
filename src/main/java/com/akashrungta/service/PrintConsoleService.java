@@ -24,7 +24,6 @@ public class PrintConsoleService {
             sb.append("\t").append(statusCode).append("=").append(count).append("\n");
         });
         sb.append("\n");
-        log.debug("Print summary event " + sb.toString());
         System.out.println(sb.toString());
     }
 
