@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'io.freefair.lombok' version '4.1.6'
+    id 'net.researchgate.release' version '2.6.0'
 }
 
 group 'com.akashrungta'
