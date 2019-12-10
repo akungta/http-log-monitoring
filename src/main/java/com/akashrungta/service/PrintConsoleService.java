@@ -45,13 +45,13 @@ public class PrintConsoleService {
 
     @Subscribe
     public void subscribe(AlertStartedEvent alertStartedEvent) {
-        System.out.println(String.format("High traffic generated an alert - hits = %d, triggered at %s",
+        System.out.println(String.format("High traffic generated an alert - hits = %d, triggered at %s\n",
                 alertStartedEvent.getTotalRequests(), formatInstant(alertStartedEvent.getInstant())));
     }
 
     @Subscribe
     public void subscribe(AlertRecoveredEvent alertRecoveredEvent) {
-        System.out.println(String.format("Recovered at %s", formatInstant(alertRecoveredEvent.getInstant())));
+        System.out.println(String.format("Alert recovered at %s\n", formatInstant(alertRecoveredEvent.getInstant())));
     }
 
 }
