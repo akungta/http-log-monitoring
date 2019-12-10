@@ -5,15 +5,10 @@ import com.akashrungta.model.AlertStartedEvent;
 import com.akashrungta.model.HttpEvent;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.Comparator;
-import java.util.IntSummaryStatistics;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,18 +36,19 @@ public class AlertService {
     public void checkAlerts(int alertThresholdRPS, int alertDuration) {
         Instant now = Instant.now();
         Instant minusDuration = now.minusSeconds(alertDuration);
-
+        log.debug("Checking the alerts at {}", now);
         // fetch all the requests counts for the given duration
         ConcurrentNavigableMap<Instant, Integer> subMap = requestsCounts.tailMap(minusDuration);
         // sum of all the request within the given duration
         int totalSum = subMap.values().stream().mapToInt(Integer::intValue).sum();
         // check if the average of the requests is greater than the alert threshold
         if(totalSum/alertDuration >= alertThresholdRPS){
-            log.debug("threshold of the alerts is reached with " + totalSum);
+            log.debug("threshold of the alerts is reached with {}", totalSum);
             // set the flag to alerting, and check the previous state
             boolean wasAlerting = isAlerting.getAndSet(true);
             // if previous state was not alerting, start alerting now
             if(!wasAlerting){
+                log.debug("Alerting");
                 eventBus.post(new AlertStartedEvent(now, totalSum));
             }
         } else {
@@ -60,12 +56,14 @@ public class AlertService {
             boolean wasAlerting = isAlerting.getAndSet(false);
             // if previous state was not alerting, send recovery alert
             if(wasAlerting){
+                log.debug("Alerting Recovered");
                 eventBus.post(new AlertRecoveredEvent(now));
             }
         }
     }
 
     public void clearAlerts(int alertDuration) {
+        log.debug("Running the cleanup");
         // clear all the element older than double the interval plus buffer of 10 seconds
         requestsCounts.headMap(Instant.now().minusSeconds(alertDuration).minusSeconds(10)).clear();
     }

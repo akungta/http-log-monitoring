@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Slf4j
 public class SummaryService {
@@ -36,11 +36,11 @@ public class SummaryService {
         while(httpEventsQueue.peek() != null && !httpEventsQueue.peek().getInstant().isAfter(now)){
             HttpEvent event = httpEventsQueue.poll();
             // ignore unprocessed/out-of-order http event before the interval
-            if(!event.getInstant().isBefore(minusInterval)){
+            if (event != null && !event.getInstant().isBefore(minusInterval)) {
                 httpEventsToBeSummarized.add(event);
             }
         }
-        log.debug("http events to summarize size " + httpEventsToBeSummarized.size());
+        log.debug("Http events to summarize size {}", httpEventsToBeSummarized.size());
         if(!httpEventsToBeSummarized.isEmpty()) {
             SummaryEvent summaryEvent = new SummaryEvent(minusInterval, now);
             for (HttpEvent httpEvent : httpEventsToBeSummarized) {
@@ -50,7 +50,7 @@ public class SummaryService {
                 summaryEvent.addUserId(httpEvent.getUserId());
                 summaryEvent.addBytes(httpEvent.getBytes());
             }
-            log.debug("created summary " + summaryEvent);
+            log.debug("Created summary {}", summaryEvent);
             eventBus.post(summaryEvent);
         }
     }

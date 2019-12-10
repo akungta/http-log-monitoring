@@ -1,8 +1,9 @@
 package com.akashrungta;
 
+import ch.qos.logback.classic.Level;
 import com.akashrungta.model.HttpEvent;
-import com.akashrungta.service.PrintConsoleService;
 import com.akashrungta.service.AlertService;
+import com.akashrungta.service.PrintConsoleService;
 import com.akashrungta.service.SummaryService;
 import com.akashrungta.utils.LogUtils;
 import com.google.common.eventbus.EventBus;
@@ -47,6 +48,10 @@ public class Main implements Runnable {
             description = "Print version information and exit.")
     private boolean versionHelpRequested;
 
+    @CommandLine.Option(names = {"-D", "--debug"},
+            description = "Write debugging code into the http_log_monitoring.log file.")
+    private boolean debugLogs;
+
     @CommandLine.Spec
     private CommandLine.Model.CommandSpec spec;
 
@@ -59,6 +64,8 @@ public class Main implements Runnable {
         validateArgs();
 
         File httpAccessLogFile = validateAndGetFile();
+
+        setLoggingLevel();
 
         System.out.println("Stating HTTP Log Monitoring\n\n");
         log.info("Starting");
@@ -99,7 +106,6 @@ public class Main implements Runnable {
 
         // shutdown hook to clean up the eventbus, gracefully shutdown the tailer and scheduler threads
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("Exiting");
             log.info("Exiting");
             tailer.stop();
             eventBus.unregister(printConsoleService);
@@ -107,6 +113,13 @@ public class Main implements Runnable {
             eventBus.unregister(alertService);
             scheduledExecutorService.shutdown();
         }));
+    }
+
+    public void setLoggingLevel() {
+        if (debugLogs) {
+            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+            root.setLevel(Level.DEBUG);
+        }
     }
 
     private void validateArgs() {
@@ -184,7 +197,7 @@ public class Main implements Runnable {
         public void handle(String logLine) {
             try {
                 Optional<HttpEvent> httpEvent = LogUtils.parseLogLine(logLine);
-                httpEvent.ifPresent(e -> eventBus.post(e));
+                httpEvent.ifPresent(eventBus::post);
             } catch (Exception e) {
                 log.error("exception in log listener", e);
             }

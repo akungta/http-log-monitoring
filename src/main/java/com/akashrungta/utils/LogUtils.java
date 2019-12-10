@@ -1,7 +1,7 @@
 package com.akashrungta.utils;
 
 import com.akashrungta.model.HttpEvent;
-import com.google.common.base.Strings;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -10,9 +10,10 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Slf4j
 public class LogUtils {
 
-    private static final Pattern LOG_PATTERN = Pattern.compile("(?<ip>[\\d\\.]+)\\s+(?<userIdentifier>[\\w-]+)\\s(?<userId>[\\w-]+)\\s\\[(?<dateTime>.*)\\]\\s\"(?<method>\\w+)\\s+(?<path>(?<section>\\/\\w+)\\/?[\\w\\/]*).*\"\\s(?<statusCode>\\d+)\\s(?<bytes>\\d+).*");
+    private static final Pattern LOG_PATTERN = Pattern.compile("(?<ip>[\\d.]+)\\s+(?<userIdentifier>[\\w-]+)\\s(?<userId>[\\w-]+)\\s\\[(?<dateTime>.*)]\\s\"(?<method>\\w+)\\s+(?<path>(?<section>/\\w+)/?[\\w/]*).*\"\\s(?<statusCode>\\d+)\\s(?<bytes>\\d+).*");
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MMM/yyyy:HH:mm:ss Z");
 
     public static Optional<HttpEvent> parseLogLine(String logLine) {
@@ -22,7 +23,7 @@ public class LogUtils {
             try {
                 return Optional.of(buildEvent(matcher));
             } catch (Exception e){
-                //TODO: log
+                log.warn("Failed to parse log line {}", logLine, e);
             }
         }
         return Optional.empty();
