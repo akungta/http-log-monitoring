@@ -52,7 +52,7 @@ public class Main implements Runnable {
     private boolean versionHelpRequested;
 
     @CommandLine.Option(names = {"-D", "--debug"},
-            description = "Write debugging code into the http_log_monitoring.log file.")
+            description = "Write debugging messages into the \"http_log_monitoring.log\" file.")
     private boolean debugLogs;
 
     @CommandLine.Spec
