@@ -18,13 +18,19 @@ public class LogUtilsTest {
         HttpEvent actual = ret.get();
         Assert.assertEquals("127.0.0.1", actual.getIp());
         Assert.assertEquals("mary", actual.getUserId());
-        Instant expectedInstant = LocalDateTime.of(2018, 05, 9, 15, 00, 42, 0).toInstant(ZoneOffset.UTC);
+        Instant expectedInstant = LocalDateTime.of(2018, 5, 9, 15, 0, 42, 0).toInstant(ZoneOffset.UTC);
         Assert.assertEquals(expectedInstant, actual.getInstant());
         Assert.assertEquals("POST", actual.getMethod());
         Assert.assertEquals("/api", actual.getSection());
         Assert.assertEquals("/api/user", actual.getPath());
         Assert.assertEquals(503, actual.getStatusCode());
         Assert.assertEquals(12, actual.getBytes());
+    }
+
+    @Test
+    public void testEmptyLogParsing() {
+        Optional<HttpEvent> ret = LogUtils.parseLogLine("abc");
+        Assert.assertTrue(ret.isEmpty());
     }
 
 }

@@ -11,13 +11,11 @@ import org.mockito.Mockito;
 import java.time.Instant;
 import java.util.Random;
 
-import static org.junit.Assert.*;
-
 public class SummaryServiceTest {
 
-    public EventBus eventBus = Mockito.mock(EventBus.class);
+    private final EventBus eventBus = Mockito.mock(EventBus.class);
 
-    public SummaryService summaryService = new SummaryService(eventBus);
+    private final SummaryService summaryService = new SummaryService(eventBus);
 
     @Test
     public void testSummarize() throws InterruptedException {
@@ -61,10 +59,10 @@ public class SummaryServiceTest {
         if(actual.getStatusCodeCounts().containsKey(500)) {
             Assert.assertEquals(countof500, (int) actual.getStatusCodeCounts().get(500));
         }
-        if(actual.getHitsPerSections().containsKey("/a")) {
+        if (actual.getHitsPerSections().containsKey("/a")) {
             Assert.assertEquals(countofA, (int) actual.getHitsPerSections().get("/a"));
         }
-        if(actual.getStatusCodeCounts().containsKey("/b")) {
+        if (actual.getHitsPerSections().containsKey("/b")) {
             Assert.assertEquals(countofB, (int) actual.getHitsPerSections().get("/b"));
         }
     }
