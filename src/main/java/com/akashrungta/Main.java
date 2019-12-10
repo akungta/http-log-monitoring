@@ -47,11 +47,18 @@ public class Main implements Runnable {
             description = "Print version information and exit.")
     private boolean versionHelpRequested;
 
+    @CommandLine.Spec
+    private CommandLine.Model.CommandSpec spec;
+
     public static void main(String[] args) {
         new CommandLine(new Main()).execute(args);
     }
 
     public void run() {
+
+        validateArgs();
+
+        File httpAccessLogFile = validateAndGetFile();
 
         System.out.println("Stating HTTP Log Monitoring\n\n");
         log.info("Starting");
@@ -71,18 +78,22 @@ public class Main implements Runnable {
         eventBus.register(alertService);
 
         // executor service to schedule summary and alerts
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(3);
 
         // scheduler to run the summary service every given interval, starting at the given interval
         scheduledExecutorService.scheduleAtFixedRate(new SummaryRunner(summaryService),
                 summaryIntervalInSeconds, summaryIntervalInSeconds, TimeUnit.SECONDS);
 
-        // scheduler to run the alter service every 1 second after the initial alert duration
+        // scheduler to run the alert service every 1 second after the initial alert duration
         scheduledExecutorService.scheduleWithFixedDelay(new AlertRunner(alertService),
                 alertDuration, 1, TimeUnit.SECONDS);
 
+        // scheduler to cleanup the alerts events older than alertDuration
+        scheduledExecutorService.scheduleWithFixedDelay(new AlertCleanupRunner(alertService),
+                alertDuration, alertDuration, TimeUnit.SECONDS);
+
         // tail -f functionality to read the latest added entry to the log file, every 100ms
-        Tailer tailer = new Tailer(new File(file), new LogTailerListener(eventBus), 100, true);
+        Tailer tailer = new Tailer(httpAccessLogFile, new LogTailerListener(eventBus), 100, true);
         // start the reading of the log file
         tailer.run();
 
@@ -96,6 +107,27 @@ public class Main implements Runnable {
             eventBus.unregister(alertService);
             scheduledExecutorService.shutdown();
         }));
+    }
+
+    private void validateArgs() {
+        if (alertThresholdRPS == 0) {
+            throw new CommandLine.ParameterException(spec.commandLine(), "alertThreshold cannot be 0");
+        }
+        if (alertDuration == 0) {
+            throw new CommandLine.ParameterException(spec.commandLine(), "alertDuration cannot be 0");
+        }
+        if (summaryIntervalInSeconds == 0) {
+            throw new CommandLine.ParameterException(spec.commandLine(), "summaryInterval cannot be 0");
+        }
+    }
+
+    private File validateAndGetFile() {
+        File retval = new File(file);
+        if(!retval.isFile() || retval.isDirectory()){
+            throw new CommandLine.ParameterException(spec.commandLine(),
+                    String.format("Problem with reading the http access log file %s.", file));
+        }
+        return retval;
     }
 
     @RequiredArgsConstructor
@@ -124,6 +156,21 @@ public class Main implements Runnable {
                 alertService.checkAlerts(alertThresholdRPS, alertDuration);
             } catch (Exception e) {
                 log.error("exception while calling alert trigger", e);
+            }
+        }
+    }
+
+    @RequiredArgsConstructor
+    private class AlertCleanupRunner implements Runnable {
+
+        private final AlertService alertService;
+
+        @Override
+        public void run() {
+            try {
+                alertService.clearAlerts(alertDuration);
+            } catch (Exception e) {
+                log.error("exception while cleaning up the alerts", e);
             }
         }
     }

@@ -14,14 +14,14 @@ import java.util.Locale;
 @Slf4j
 public class PrintConsoleService {
 
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MMM/dd, HH:mm:ss")
             .withLocale(Locale.UK)
             .withZone(ZoneId.systemDefault());
 
     @Subscribe
     public void subscribe(SummaryEvent summaryEvent){
         StringBuilder sb = new StringBuilder();
-        sb.append("\n\n****SUMMARY****\n");
+        sb.append("****SUMMARY****\n");
         sb.append("From {")
                 .append(formatInstant(summaryEvent.getFrom()))
                 .append("} To {")

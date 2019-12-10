@@ -29,7 +29,7 @@ public class AlertService {
 
     public AlertService(EventBus eventBus) {
         this.eventBus = eventBus;
-        this.requestsCounts = new ConcurrentSkipListMap<>(Comparator.comparingLong(Instant::toEpochMilli));
+        this.requestsCounts = new ConcurrentSkipListMap<>(Comparator.comparingLong(Instant::getEpochSecond));
         this.isAlerting = new AtomicBoolean(false);
     }
 
@@ -41,18 +41,19 @@ public class AlertService {
     public void checkAlerts(int alertThresholdRPS, int alertDuration) {
         Instant now = Instant.now();
         Instant minusDuration = now.minusSeconds(alertDuration);
+
         // fetch all the requests counts for the given duration
         ConcurrentNavigableMap<Instant, Integer> subMap = requestsCounts.tailMap(minusDuration);
         // sum of all the request within the given duration
-        IntSummaryStatistics summaryStatistics = subMap.values().stream().mapToInt(Integer::intValue).summaryStatistics();
+        int totalSum = subMap.values().stream().mapToInt(Integer::intValue).sum();
         // check if the average of the requests is greater than the alert threshold
-        if(summaryStatistics.getAverage() >= alertThresholdRPS){
-            log.debug("threshold of the alerts is reached " + summaryStatistics);
+        if(totalSum/alertDuration >= alertThresholdRPS){
+            log.debug("threshold of the alerts is reached with " + totalSum);
             // set the flag to alerting, and check the previous state
             boolean wasAlerting = isAlerting.getAndSet(true);
             // if previous state was not alerting, start alerting now
             if(!wasAlerting){
-                eventBus.post(new AlertStartedEvent(now, summaryStatistics.getSum()));
+                eventBus.post(new AlertStartedEvent(now, totalSum));
             }
         } else {
             // set the flag to non-alerting, and check the previous state
@@ -62,8 +63,11 @@ public class AlertService {
                 eventBus.post(new AlertRecoveredEvent(now));
             }
         }
-        // clear all the element older than 2 minutes
-        requestsCounts.headMap(minusDuration).clear();
+    }
+
+    public void clearAlerts(int alertDuration) {
+        // clear all the element older than double the interval plus buffer of 10 seconds
+        requestsCounts.headMap(Instant.now().minusSeconds(alertDuration).minusSeconds(10)).clear();
     }
 
 }
