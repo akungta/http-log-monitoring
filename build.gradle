@@ -25,6 +25,7 @@ repositories {
 dependencies {
     compile group: 'commons-io', name: 'commons-io', version: '2.6'
     compile group: 'com.google.guava', name: 'guava', version: '28.1-jre'
+    compile group: 'org.fusesource.jansi', name: 'jansi', version: '1.18'
     // Picoli for the command line management
     compile group: 'info.picocli', name:'picocli', version: '4.1.1'
     compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'

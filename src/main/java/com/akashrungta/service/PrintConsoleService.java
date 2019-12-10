@@ -11,6 +11,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
+import static org.fusesource.jansi.Ansi.ansi;
+
 @Slf4j
 public class PrintConsoleService {
 
@@ -25,7 +27,7 @@ public class PrintConsoleService {
     @Subscribe
     public void subscribe(SummaryEvent summaryEvent) {
         StringBuilder sb = new StringBuilder();
-        sb.append("****SUMMARY****\n");
+        sb.append(ansi().fgBrightBlue().a("SUMMARY\n").reset());
         sb.append("From {")
                 .append(formatInstant(summaryEvent.getFrom()))
                 .append("} To {")
@@ -39,19 +41,20 @@ public class PrintConsoleService {
         sb.append("HTTP StatusCodes Counts:\n");
         summaryEvent.getStatusCodeCounts().forEach((statusCode, count) ->
                 sb.append("  ").append(statusCode).append("=").append(count).append("\n"));
-        sb.append("\n");
-        System.out.println(sb.toString());
+        System.out.println(ansi().fgDefault().a(sb.toString()).reset());
     }
 
     @Subscribe
     public void subscribe(AlertStartedEvent alertStartedEvent) {
-        System.out.println(String.format("High traffic generated an alert - hits = %d, triggered at %s\n",
-                alertStartedEvent.getTotalRequests(), formatInstant(alertStartedEvent.getInstant())));
+        System.out.println(ansi().fgRed().bold().a(
+                String.format("High traffic generated an alert - hits = %d, triggered at %s\n",
+                        alertStartedEvent.getTotalRequests(), formatInstant(alertStartedEvent.getInstant()))).reset());
     }
 
     @Subscribe
     public void subscribe(AlertRecoveredEvent alertRecoveredEvent) {
-        System.out.println(String.format("Alert recovered at %s\n", formatInstant(alertRecoveredEvent.getInstant())));
+        System.out.println(ansi().fgGreen().bold().a(
+                String.format("Alert recovered at %s\n", formatInstant(alertRecoveredEvent.getInstant()))).reset());
     }
 
 }

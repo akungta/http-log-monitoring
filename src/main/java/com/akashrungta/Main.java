@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.input.Tailer;
 import org.apache.commons.io.input.TailerListenerAdapter;
+import org.fusesource.jansi.AnsiConsole;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -18,6 +19,8 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static org.fusesource.jansi.Ansi.ansi;
 
 @Slf4j
 @CommandLine.Command(version = "v1.0", header = "%nHTTP Log Monitoring Tool%n",
@@ -62,12 +65,13 @@ public class Main implements Runnable {
     public void run() {
 
         validateArgs();
+        setLoggingLevel();
 
         File httpAccessLogFile = validateAndGetFile();
 
-        setLoggingLevel();
+        AnsiConsole.systemInstall();
 
-        System.out.println("Stating HTTP Log Monitoring\n\n");
+        System.out.println(ansi().fgYellow().bold().a("Starting HTTP Log Monitoring\n").reset());
         log.info("Starting");
 
         // setup eventbus to publish alerts
@@ -106,6 +110,7 @@ public class Main implements Runnable {
 
         // shutdown hook to clean up the eventbus, gracefully shutdown the tailer and scheduler threads
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            AnsiConsole.systemUninstall();
             log.info("Exiting");
             tailer.stop();
             eventBus.unregister(printConsoleService);
