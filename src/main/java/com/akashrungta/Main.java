@@ -136,11 +136,28 @@ public class Main implements Runnable {
 
     private File validateAndGetFile() {
         File retval = new File(file);
-        if(!retval.isFile() || retval.isDirectory()){
+        if (!retval.isFile() || retval.isDirectory()) {
             throw new CommandLine.ParameterException(spec.commandLine(),
                     String.format("Problem with reading the http access log file %s.", file));
         }
         return retval;
+    }
+
+    @RequiredArgsConstructor
+    private static class LogTailerListener extends TailerListenerAdapter {
+
+        private final EventBus eventBus;
+
+        @Override
+        public void handle(String logLine) {
+            try {
+                Optional<HttpEvent> httpEvent = LogUtils.parseLogLine(logLine);
+                httpEvent.ifPresent(eventBus::post);
+            } catch (Exception e) {
+                log.error("exception in log listener", e);
+            }
+        }
+
     }
 
     @RequiredArgsConstructor
@@ -186,23 +203,6 @@ public class Main implements Runnable {
                 log.error("exception while cleaning up the alerts", e);
             }
         }
-    }
-
-    @RequiredArgsConstructor
-    private static class LogTailerListener extends TailerListenerAdapter {
-
-        private final EventBus eventBus;
-
-        @Override
-        public void handle(String logLine) {
-            try {
-                Optional<HttpEvent> httpEvent = LogUtils.parseLogLine(logLine);
-                httpEvent.ifPresent(eventBus::post);
-            } catch (Exception e) {
-                log.error("exception in log listener", e);
-            }
-        }
-
     }
 
 }

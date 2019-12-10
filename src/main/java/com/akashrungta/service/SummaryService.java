@@ -18,22 +18,22 @@ public class SummaryService {
 
     private final ConcurrentLinkedQueue<HttpEvent> httpEventsQueue;
 
-    public SummaryService(EventBus eventBus){
+    public SummaryService(EventBus eventBus) {
         this.eventBus = eventBus;
         this.httpEventsQueue = new ConcurrentLinkedQueue<>();
     }
 
     @Subscribe
-    public void subscribe(HttpEvent event){
+    public void subscribe(HttpEvent event) {
         httpEventsQueue.add(event);
     }
 
-    public void summarize(int summaryInterval){
+    public void summarize(int summaryInterval) {
         Instant now = Instant.now();
         Instant minusInterval = now.minusSeconds(summaryInterval);
         List<HttpEvent> httpEventsToBeSummarized = Lists.newArrayList();
         // loop to collect all the events in the queue till the current
-        while(httpEventsQueue.peek() != null && !httpEventsQueue.peek().getInstant().isAfter(now)){
+        while (httpEventsQueue.peek() != null && !httpEventsQueue.peek().getInstant().isAfter(now)) {
             HttpEvent event = httpEventsQueue.poll();
             // ignore unprocessed/out-of-order http event before the interval
             if (event != null && !event.getInstant().isBefore(minusInterval)) {
@@ -41,7 +41,7 @@ public class SummaryService {
             }
         }
         log.debug("Http events to summarize size {}", httpEventsToBeSummarized.size());
-        if(!httpEventsToBeSummarized.isEmpty()) {
+        if (!httpEventsToBeSummarized.isEmpty()) {
             SummaryEvent summaryEvent = new SummaryEvent(minusInterval, now);
             for (HttpEvent httpEvent : httpEventsToBeSummarized) {
                 summaryEvent.incrementRequestCount();

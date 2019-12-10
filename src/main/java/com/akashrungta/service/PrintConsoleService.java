@@ -18,8 +18,12 @@ public class PrintConsoleService {
             .withLocale(Locale.UK)
             .withZone(ZoneId.systemDefault());
 
+    private static String formatInstant(Instant instant) {
+        return formatter.format(instant);
+    }
+
     @Subscribe
-    public void subscribe(SummaryEvent summaryEvent){
+    public void subscribe(SummaryEvent summaryEvent) {
         StringBuilder sb = new StringBuilder();
         sb.append("****SUMMARY****\n");
         sb.append("From {")
@@ -28,32 +32,26 @@ public class PrintConsoleService {
                 .append(formatInstant(summaryEvent.getTo())).append("}\n");
         sb.append("Total Requests: ").append(summaryEvent.getTotalRequests()).append("\n");
         sb.append("Total Bytes: ").append(summaryEvent.getTotalBytes()).append("\n");
-        sb.append("Total Unique Users: ").append(summaryEvent.getUnqiueUserIds().size()).append("\n");
+        sb.append("Total Unique Users: ").append(summaryEvent.getUniqueUserIds().size()).append("\n");
         sb.append("Hits per Section:\n");
-        summaryEvent.getHitsPerSections().forEach((section, hits) -> {
-            sb.append("  ").append(section).append("=").append(hits).append("\n");
-        });
+        summaryEvent.getHitsPerSections().forEach((section, hits) ->
+                sb.append("  ").append(section).append("=").append(hits).append("\n"));
         sb.append("HTTP StatusCodes Counts:\n");
-        summaryEvent.getStatusCodeCounts().forEach((statusCode, count) -> {
-            sb.append("  ").append(statusCode).append("=").append(count).append("\n");
-        });
+        summaryEvent.getStatusCodeCounts().forEach((statusCode, count) ->
+                sb.append("  ").append(statusCode).append("=").append(count).append("\n"));
         sb.append("\n");
         System.out.println(sb.toString());
     }
 
     @Subscribe
-    public void subscribe(AlertStartedEvent alertStartedEvent){
+    public void subscribe(AlertStartedEvent alertStartedEvent) {
         System.out.println(String.format("High traffic generated an alert - hits = %d, triggered at %s",
                 alertStartedEvent.getTotalRequests(), formatInstant(alertStartedEvent.getInstant())));
     }
 
     @Subscribe
-    public void subscribe(AlertRecoveredEvent alertRecoveredEvent){
+    public void subscribe(AlertRecoveredEvent alertRecoveredEvent) {
         System.out.println(String.format("Recovered at %s", formatInstant(alertRecoveredEvent.getInstant())));
-    }
-
-    private static String formatInstant(Instant instant){
-        return formatter.format(instant);
     }
 
 }

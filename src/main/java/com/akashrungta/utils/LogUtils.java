@@ -19,22 +19,22 @@ public class LogUtils {
     public static Optional<HttpEvent> parseLogLine(String logLine) {
         String cleanedLongLine = logLine.replace("(\\r|\\n)", "").trim();
         Matcher matcher = LOG_PATTERN.matcher(cleanedLongLine);
-        if(matcher.matches()){
+        if (matcher.matches()) {
             try {
                 return Optional.of(buildEvent(matcher));
-            } catch (Exception e){
+            } catch (Exception e) {
                 log.warn("Failed to parse log line {}", logLine, e);
             }
         }
         return Optional.empty();
     }
 
-    private static HttpEvent buildEvent(Matcher matcher){
+    private static HttpEvent buildEvent(Matcher matcher) {
         HttpEvent.HttpEventBuilder builder = HttpEvent.builder();
         builder.ip(matcher.group("ip"));
         String userId = matcher.group("userId");
         // only if userId is present
-        if(!"-".equals(userId)) {
+        if (!"-".equals(userId)) {
             builder.userId(userId);
         }
         builder.instant(getInstant(matcher.group("dateTime")));

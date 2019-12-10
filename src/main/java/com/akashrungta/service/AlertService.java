@@ -20,7 +20,7 @@ public class AlertService {
 
     private final ConcurrentSkipListMap<Instant, Integer> requestsCounts;
 
-    private AtomicBoolean isAlerting;
+    private final AtomicBoolean isAlerting;
 
     public AlertService(EventBus eventBus) {
         this.eventBus = eventBus;
@@ -29,7 +29,7 @@ public class AlertService {
     }
 
     @Subscribe
-    public void subscribe(HttpEvent event){
+    public void subscribe(HttpEvent event) {
         requestsCounts.merge(event.getInstant(), 1, Integer::sum);
     }
 
@@ -42,12 +42,12 @@ public class AlertService {
         // sum of all the request within the given duration
         int totalSum = subMap.values().stream().mapToInt(Integer::intValue).sum();
         // check if the average of the requests is greater than the alert threshold
-        if(totalSum/alertDuration >= alertThresholdRPS){
+        if (totalSum / alertDuration >= alertThresholdRPS) {
             log.debug("threshold of the alerts is reached with {}", totalSum);
             // set the flag to alerting, and check the previous state
             boolean wasAlerting = isAlerting.getAndSet(true);
             // if previous state was not alerting, start alerting now
-            if(!wasAlerting){
+            if (!wasAlerting) {
                 log.debug("Alerting");
                 eventBus.post(new AlertStartedEvent(now, totalSum));
             }
@@ -55,7 +55,7 @@ public class AlertService {
             // set the flag to non-alerting, and check the previous state
             boolean wasAlerting = isAlerting.getAndSet(false);
             // if previous state was not alerting, send recovery alert
-            if(wasAlerting){
+            if (wasAlerting) {
                 log.debug("Alerting Recovered");
                 eventBus.post(new AlertRecoveredEvent(now));
             }
