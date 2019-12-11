@@ -41,8 +41,6 @@ HTTP StatusCodes Counts:
 
 Below is the alert triggered, if the requests per seconds in more than "alertThreshold" (defined over the period of "alertDuration")
 
-" "alertDuration"
-
 ```dtd
 High traffic generated an alert - hits = 28, triggered at 2019/Dec/10, 23:13:07
 ```
