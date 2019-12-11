@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import static org.fusesource.jansi.Ansi.ansi;
 
 @Slf4j
-@CommandLine.Command(version = "v1.0", header = "%nHTTP Log Monitoring Tool%n",
+@CommandLine.Command(version = "v1.1", header = "%nHTTP Log Monitoring Tool%n",
         description = "Prints usage help and version help when requested.%n")
 public class Main implements Runnable {
 
@@ -105,19 +105,23 @@ public class Main implements Runnable {
 
         // tail -f functionality to read the latest added entry to the log file, every 100ms
         Tailer tailer = new Tailer(httpAccessLogFile, new LogTailerListener(eventBus), 100, true);
-        // start the reading of the log file
-        tailer.run();
 
-        // shutdown hook to clean up the eventbus, gracefully shutdown the tailer and scheduler threads
+        // register the shutdown hook to clean up the eventbus, gracefully shutdown the tailer and scheduler threads
+        // runs on ctrl+c or system.exit
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println(ansi().fgYellow().bold().a("Exiting...\n").reset());
             AnsiConsole.systemUninstall();
-            log.info("Exiting");
             tailer.stop();
             eventBus.unregister(printConsoleService);
             eventBus.unregister(summaryService);
             eventBus.unregister(alertService);
             scheduledExecutorService.shutdown();
+            log.info("Resources cleaned up. Exiting the main thread.");
         }));
+
+        // start the reading of the log file in the main thread
+        // this will keep the process alive until killed
+        tailer.run();
     }
 
     public void setLoggingLevel() {

@@ -2,7 +2,17 @@
 
 This program monitors HTTP access log (https://www.w3.org/Daemon/User/Config/Logging.html).
 
-```unix
+## Installation
+
+### Requirements
+
+Minimum requirements to run the application is JRE 11
+
+Use this [link](https://adoptopenjdk.net/installation.html?variant=openjdk11&jvmVariant=hotspot#x64_mac-jre) to install the jre.
+
+## Usage
+
+```bash
 $ java -jar http-log-monitoring.jar --help
 
 HTTP Log Monitoring Tool
@@ -21,9 +31,9 @@ Prints usage help and version help when requested.
 
 Below is the summary printed after every "summaryInterval"
 
-```dtd
+```
 SUMMARY
-From {2019/Dec/10, 23:13:07} To {2019/Dec/10, 23:13:12}
+From {2019/Dec/10, 23:13:07} To {2019/Dec/10, 23:13:17}
 Total Requests: 10
 Total Bytes: 49860
 Total Unique Users: 0
@@ -41,12 +51,23 @@ HTTP StatusCodes Counts:
 
 Below is the alert triggered, if the requests per seconds in more than "alertThreshold" (defined over the period of "alertDuration")
 
-```dtd
+```
 High traffic generated an alert - hits = 28, triggered at 2019/Dec/10, 23:13:07
 ```
 
 Recovery alert triggered when the requests per seconds drops below "alertThreshold".
 
-```dtd
+```
 Alert recovered at 2019/Dec/10, 23:13:55
 ```
+
+## How to build
+
+You require the following to build the source code:
+
+    JDK 11
+    Gradle
+
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)

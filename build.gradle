@@ -5,7 +5,6 @@ plugins {
 }
 
 group 'com.akashrungta'
-version '1.1-SNAPSHOT'
 
 sourceCompatibility = 11
 
@@ -14,7 +13,7 @@ jar {
         attributes "Main-Class": "com.akashrungta.Main"
     }
     from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
 
@@ -23,14 +22,14 @@ repositories {
 }
 
 dependencies {
-    compile group: 'commons-io', name: 'commons-io', version: '2.6'
-    compile group: 'com.google.guava', name: 'guava', version: '28.1-jre'
-    compile group: 'org.fusesource.jansi', name: 'jansi', version: '1.18'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.6'
+    implementation group: 'com.google.guava', name: 'guava', version: '28.1-jre'
+    implementation group: 'org.fusesource.jansi', name: 'jansi', version: '1.18'
     // Picoli for the command line management
-    compile group: 'info.picocli', name:'picocli', version: '4.1.1'
-    compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
-    compile group: 'ch.qos.logback', name: 'logback-core', version: '1.2.3'
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.29'
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'org.mockito', name: 'mockito-core', version: '3.2.0'
+    implementation group: 'info.picocli', name:'picocli', version: '4.1.1'
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    implementation group: 'ch.qos.logback', name: 'logback-core', version: '1.2.3'
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.29'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.2.0'
 }
